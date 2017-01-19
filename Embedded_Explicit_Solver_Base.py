@@ -3,12 +3,12 @@ import matplotlib.pyplot as plt
 from Limiter import Limiter
 from Fluid import Fluid
 from Structure import Structure
-from Intersector import Intersector
+from Intersector_Base import Intersector_Base
 import Utility
 import Flux
 
 class Embedded_Explicit_Solver_Base:
-    def __init__(self, fluid, structure, time_info):
+    def __init__(self, fluid, structure, time_info, limiter = 'Van_Albada'):
         """
         Initialize Embedded Explicit Solver
         Args:
@@ -25,9 +25,9 @@ class Embedded_Explicit_Solver_Base:
 
         self.structure = structure
 
-        self.intersector = Intersector(fluid,structure)
+        self.intersector = Intersector_Base(fluid,structure)
 
-        self.limiter = Limiter('Van_Albada')
+        self.limiter = Limiter(limiter)
 
         nverts = fluid.nverts
 
@@ -55,7 +55,8 @@ class Embedded_Explicit_Solver_Base:
         for i in range(nverts):
             # x_{i-1}              x_i                   x_{i+1}
             #           e_{i-1}            e_i
-
+            if(not status[i]):
+                continue
             det = 0
             b = np.zeros(shape=[3], dtype=float)
             if(i-1 >= 0 and status[i-1] and not intersect_or_not[i-1]):
@@ -389,24 +390,24 @@ class Embedded_Explicit_Solver_Base:
         xs = self.structure.qq_n[0]
 
         plt.figure(1)
-        plt.plot(verts, V[:,0], 'r-', label = 'desity')
+        plt.plot(verts, V[:,0], 'ro-', markersize=2.0, label = 'desity')
         plt.plot((xs, xs), (0, 1), 'k-')
         plt.legend(loc='upper right')
         plt.title('receding forced motion L = %d' % (L))
 
         plt.figure(2)
-        plt.plot(verts, V[:, 1], 'r-', label = 'v')
+        plt.plot(verts, V[:, 1], 'ro-',markersize=2.0, label = 'v')
         plt.plot((xs, xs), (0, 1), 'k-')
         plt.legend(loc='upper right')
         plt.title('receding forced motion L = %d' % (L))
 
         plt.figure(3)
 
-        plt.plot(verts, V[:, 2], 'r-',label = 'p')
+        plt.plot(verts, V[:, 2], 'ro-',markersize=2.0,label = 'p')
         plt.plot((xs, xs), (0, 1), 'k-')
         plt.legend(loc='upper right')
         plt.title('receding forced motion L = %d' % (L))
-        #plt.show()
+        plt.show()
 
 
 

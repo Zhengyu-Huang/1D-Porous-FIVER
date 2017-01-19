@@ -1,12 +1,12 @@
 import numpy as np
 class Limiter:
-    def __init__(self,type,beta = 2.0):
+    def __init__(self,type,beta = 4.0/3.0):
         self.beta = beta
         self.type = type
     def _VA_slope_limiter(self,a,b,eps=1.0e-15):
         slope = np.empty(3,dtype=float)
         for i in range(3):
-            if(a[i]*b[i]  < 0):
+            if(a[i]*b[i]  <= 0):
                 slope[i] = 0.0
             else:
                 slope[i] =  (a[i]*(b[i]**2 + eps) + b[i]*(a[i]**2 + eps))/(a[i]**2 + b[i]**2 + 2*eps)
