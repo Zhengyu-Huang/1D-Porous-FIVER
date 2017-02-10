@@ -28,11 +28,11 @@ def main():
     '''
     gamma = 1.4
     rho = 1.4
-    Mach = -2.0
+    Mach = 0.98
     p = 1.0
     v = Mach*np.sqrt(gamma*p/rho)
     fluid_info = ['constant', gamma, rho, v, p]
-    #fluid_info = ['shock_tube', gamma, rho, 0.0, 2*p,  rho, 0.0, p]
+    #fluid_info = ['shock_tube', gamma, 5.99924, 19.5975, 460.894, 5.99242, -6.19633, 46.0950]
     N = 500
     L = 4.0
     bc = ['far_field', 'far_field']
