@@ -6,6 +6,7 @@ from Structure import Structure
 from Intersector_Base import Intersector_Base
 import Utility
 import Flux
+import Propeller_Riemann_Solver
 
 class Embedded_Explicit_Solver_Base:
     def __init__(self, fluid, structure, time_info, limiter = 'Van_Albada'):
@@ -26,6 +27,8 @@ class Embedded_Explicit_Solver_Base:
         self.structure = structure
 
         self.intersector = Intersector_Base(fluid,structure)
+
+        self.material = structure.material
 
         self.limiter = Limiter(limiter)
 
@@ -80,10 +83,15 @@ class Embedded_Explicit_Solver_Base:
 
 
     def _solve(self):
+        '''
+        A6 strongly coupling scheme
+        s1     s2      s3
+           f1      f2       f3
+        A6_first_step updates fluid to time dt/2
+        :return:
+        '''
 
         dt = self.dt
-
-        print('start A6 method')
 
         self._A6_first_step(dt/2)
 
@@ -124,6 +132,23 @@ class Embedded_Explicit_Solver_Base:
 
 
     def _fluid_advance(self, dt):
+        '''
+        update fluid state by RK2
+        :param dt: time step
+        :return:
+           s1^p    s2^p     s3^p
+           f1      f2       f3
+        embedded boundary is at s1^p, structure is at s1.5, fluid is at f1
+
+        use s1^p to compute first RK step
+             k^1 = F(w^1, s1^p)
+             w^{1.5} = w^1 + dt*k^1 ,
+        update embedded boundary to s2^p
+        phase change update based on s2^p to W^{1.5}
+             k^2 = F(w^1.5, s_2^p)
+             w^2 = w^1 + dt/2*(k^1 + k^2)
+        phase change update on s2^p to W^{2}
+        '''
 
         fluid = self.fluid
 
@@ -160,6 +185,7 @@ class Embedded_Explicit_Solver_Base:
 
         #update embedded surface to time n+1
         intersector._update(structure.qq_n)
+        #print(self.intersector.status[49:51])
 
         intersector._phase_change(W0)
 
@@ -181,11 +207,10 @@ class Embedded_Explicit_Solver_Base:
         W += R * dt / control_volume;
 
 
-        intersector._phase_change(W) #use only intersector information
+        intersector._phase_change(W)
 
-        #self._check_solution(W);
 
-        #self._compute_residual(R, W)
+        self._conservation_error(W,self.t)
 
 
 
@@ -211,17 +236,16 @@ class Embedded_Explicit_Solver_Base:
 
         limiter = self.limiter
 
-        porous = self.structure.porous_ratio
-
         gamma = fluid.gamma
 
         self._lsq_gradient(V)
+
 
         for i in range(fluid.nedges):
             # x_{i-1}              x_i                   x_{i+1}
             #           e_{i-1}            e_i
 
-            v_l, v_r = V[i, :], V[i+1, :]
+            u_l, u_r = V[i, :], V[i+1, :]
 
             l_active, r_active = status[i], status[i+1]
 
@@ -229,57 +253,106 @@ class Embedded_Explicit_Solver_Base:
 
             e_lr = fluid.edge_vector[i]
 
-
-            dv_l, dv_r = np.dot(e_lr, self.gradient_V[i, :]), -np.dot(e_lr, self.gradient_V[i+1, :])
+            du_l, du_r = np.dot(e_lr, self.gradient_V[i, :]), -np.dot(e_lr, self.gradient_V[i+1, :])
 
             if (l_active and r_active and not intersect):
 
-                v_ll, v_rr = limiter._reconstruct(v_l, v_r, dv_l, dv_r)
+                u_ll, u_rr = limiter._reconstruct(u_l, u_r, du_l, du_r)
 
                 #if(v_ll[2] < 0 or v_rr[2] < 0 or v_ll[0] < 0  or v_rr[0] <0):
                 #    print('stop debug')
                 #    limiter._reconstruct(v_l, v_r, dv_l, dv_r)
-                flux = Flux._Roe_flux(v_ll, v_rr, gamma)
-
-
+                flux = Flux._Roe_flux(u_ll, u_rr, gamma)
 
                 R[i, :] -= flux
 
                 R[i+1, :] += flux
 
             else:
-                #TODO
-                #############################################################
-                # consider there are two case,
-                # consider that the membrane is porous
-                # 1. ghost update
-                # 2. compute flux regarding there is no structure
-                # 3. compute fluid structure flux
-                # 4. average these two fluxes
-                #############################################################
+                if(self.material[0] == 'porous'):
+                    #############################################################
+                    # consider there are two case,
+                    # consider that the membrane is porous
+                    # 1. ghost update
+                    # 2. compute flux regarding there is no structure
+                    # 3. compute fluid structure flux
+                    # 4. average these two fluxes
+                    #############################################################
+                    u_ll, u_rr = u_l,u_r
 
-                v_ll, v_rr = v_l,v_r
-                #print('FIVER', v_l, v_r)
-                flux = Flux._Roe_flux(v_ll, v_rr, gamma)
+                    flux = Flux._Roe_flux(u_ll, u_rr, gamma)
+
+                    porous = self.material[1]
+
+                    if (l_active):
+
+                        u_Rr = self.FIVER(V, i , i, limiter)
+
+                        flux_FS = Flux._Roe_flux(u_ll, u_Rr, gamma)
+
+                        R[i, :] -= porous*flux + (1-porous)*flux_FS
+                        print('l ',u_ll,u_Rr, flux, flux_FS, porous*flux + (1-porous)*flux_FS)
+
+                    if (r_active):
+
+                        u_Rl = self.FIVER(V, i , i+1, limiter)
+
+                        flux_FS = Flux._Roe_flux(u_Rl, u_rr, gamma)
+
+                        R[i+1, :] += porous*flux + (1-porous)*flux_FS
+                        print('r ', u_Rl, u_rr, flux, flux_FS,porous*flux + (1-porous)*flux_FS)
+
+                elif(self.material[0] == 'propeller'):
+
+                    dp = self.material[1]
+
+                    u_ll, u_rr = u_l, u_r
+
+                    flux = Flux._Roe_flux(u_ll, u_rr, gamma)
+
+                    v_m = (u_l[1] + u_r[1])/2.0
+
+
+                    vs = self.intersector._velocity()
+
+                    source = np.array([0, dp, gamma/(gamma-1)*dp*v_m])#+ dp*(v_m - vs)/(gamma-1)])
+                    #source = np.array([0, dp, dp * v_m])
+                    R[i,:] -= flux
+
+                    R[i+1] += flux + source
+
+                elif (self.material[0] == 'propeller_Riemann'):
+
+                    dp = self.material[1]
+
+                    u_ll, u_rr = u_l, u_r
+
+                    dp = self.material[1]
+
+                    #reture the density velocity and pressure upwing of the actuator disk
+                    rho_a, v_a, p_a = Propeller_Riemann_Solver._solve_actuator_disk(u_ll, u_rr, dp, gamma)
+
+                    u_Rl, u_Rr = np.array([rho_a,v_a,p_a]), np.array([rho_a,v_a,p_a + dp])
+
+                    flux_l = Flux._Roe_flux(u_ll, u_Rl, gamma)
+
+                    flux_r = Flux._Roe_flux(u_Rr, u_rr, gamma)
+
+                    #flux_l = Flux._flux(u_Rl, gamma)
+
+                    #flux_r = Flux._flux(u_Rr, gamma)
 
 
 
-                if (l_active):
+                    R[i, :] -= flux_l
+
+                    R[i + 1] += flux_r
+
+                else:
+                    print('unrecognized material', self.material[0])
 
 
-                    v_Rr = self.FIVER(V, i , i, limiter)
 
-                    flux_FS = Flux._Roe_flux(v_ll, v_Rr, gamma)
-
-                    R[i, :] -= porous*flux + (1-porous)*flux_FS
-
-                if (r_active):
-
-                    v_Rl = self.FIVER(V, i , i+1, limiter)
-
-                    flux_FS = Flux._Roe_flux(v_Rl, v_rr, gamma)
-
-                    R[i+1, :] += porous*flux + (1-porous)*flux_FS
 
 
     def _euler_boundary_flux(self,V,R):
@@ -308,7 +381,8 @@ class Embedded_Explicit_Solver_Base:
 
             elif(type == 'far_field'): #subsonic_outflow
                 # parameterise the outflow state by a freestream pressure rho_f
-                W_oo = fluid.W_oo
+
+                W_oo = fluid.Wl_oo if n==0 else fluid.Wr_oo
 
 
                 R[n,:] -= Flux._Steger_Warming(prim, W_oo, dr, gamma)
@@ -369,15 +443,28 @@ class Embedded_Explicit_Solver_Base:
 
         return v_R;
 
+    def _extrapolate_inactive_node(self,W):
+        return
 
+    def _conservation_error(self, W, t = 0.0):
+        control_volume = self.fluid.control_volume
+        nu_mass = np.dot(W[:, 0],control_volume)
+        nu_momentum = np.dot(W[:, 1], control_volume)
+        nu_energy = np.dot(W[:, 2], control_volume)
+        print('At %f, mass rel. error is %.15f,momentum rel. err is %f, energy rel. err is %.15f' %(t, (nu_mass - self.fluid.mass)/self.fluid.mass,
+                                                                                  (nu_momentum - self.fluid.momentum), #/self.fluid.momentum,
+                                                                                  (nu_energy - self.fluid.energy) / self.fluid.energy))
 
 
 
     def _draw(self):
+
         fluid = self.fluid
         V = np.empty(shape=[fluid.nverts, 3], dtype=float)
 
         W = self.W
+
+        self._extrapolate_inactive_node(W)
 
         L = fluid.L
 
@@ -387,26 +474,50 @@ class Embedded_Explicit_Solver_Base:
 
         Utility.conser_to_pri_all(W, V, gamma)
 
+
+
         xs = self.structure.qq_n[0]
 
+        title = self.material[0]
+
         plt.figure(1)
-        plt.plot(verts, V[:,0], 'ro-', markersize=2.0, label = 'desity')
+        plt.plot(verts, V[:,0], 'ro-', markersize=2.0, label = 'rho')
         plt.plot((xs, xs), (0, 1), 'k-')
         plt.legend(loc='upper right')
-        plt.title('receding forced motion L = %d' % (L))
+        plt.title(title)
 
         plt.figure(2)
         plt.plot(verts, V[:, 1], 'ro-',markersize=2.0, label = 'v')
         plt.plot((xs, xs), (0, 1), 'k-')
         plt.legend(loc='upper right')
-        plt.title('receding forced motion L = %d' % (L))
+        plt.title(title)
 
         plt.figure(3)
 
         plt.plot(verts, V[:, 2], 'ro-',markersize=2.0,label = 'p')
         plt.plot((xs, xs), (0, 1), 'k-')
         plt.legend(loc='upper right')
-        plt.title('receding forced motion L = %d' % (L))
+        plt.title(title)
+
+        plt.figure(4)
+
+        plt.plot(verts, V[:, 0]*V[:,1], 'ro-',markersize=2.0,label = 'mass_f')
+        plt.plot((xs, xs), (0, 1), 'k-')
+        plt.plot(verts, W[:,1]*V[:,1] + V[:,2], 'bo-',markersize=2.0,label = 'momentum_f')
+        plt.plot((xs, xs), (0, 1), 'k-')
+        plt.plot(verts, (W[:,2]+V[:,2])*(V[:,1]), 'yo-',markersize=2.0,label = 'energy_f')
+        plt.plot((xs, xs), (0, 1), 'k-')
+        plt.legend(loc='upper right')
+        plt.title(title)
+
+        M = self.fluid.nverts//2
+        print('pressure difference is %.15f, mass flux is %.15f , %.15f, momentum flux is %.15f , %.15f'
+              %(V[M+10,2] - V[M-10,2], V[M-10, 0]*V[M-10,1], V[M+10, 0]*V[M+10,1],W[M-10,1]*V[M-10,1] + V[M-10,2],W[M+10,1]*V[M+10,1] + V[M+10,2] ))
+
+        print('pressure difference is %.15f, stagnation pressure diff is %.15f, mass flux diff is %.15f , momentum flux diff is %.15f'
+              %(V[M+10,2] - V[M-10,2], V[M+10,2]  + 0.5*V[M+10,0]*V[M+10,1]**2 - V[M-10,2] - 0.5*W[M-10,0]*V[M-10,1]**2, V[M-10, 0]*V[M-10,1] - V[M+10, 0]*V[M+10,1], W[M-10,1]*V[M-10,1] + V[M-10,2] - W[M+10,1]*V[M+10,1] - V[M+10,2] ))
+        print('left rho,u,p,E  is %.15f, %.15f,  %.15f , %.15f' %(V[M-10,0] , V[M-10, 1], V[M-10,2] , W[M-10,2]))
+        print('right rho,u,p,E  is %.15f, %.15f,  %.15f, %.15f' %(V[M+10,0] , V[M+10, 1], V[M+10,2] , W[M-10,2]))
         plt.show()
 
 

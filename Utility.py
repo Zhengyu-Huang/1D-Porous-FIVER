@@ -48,7 +48,7 @@ def safe_interpolation(w1, x1, w2, x2, x3, gamma, check):
     else:
         return w1
 
-def interpolation(w1, x1, w2, x2, x3, gamma):
+def interpolation_conser(w1, x1, w2, x2, x3, gamma):
 
     u1 = conser_to_pri(w1, gamma)
     u2 = conser_to_pri(w2, gamma)
@@ -59,6 +59,11 @@ def interpolation(w1, x1, w2, x2, x3, gamma):
     w3 =pri_to_conser(u3,gamma)
     return w3
 
+def interpolation_pri(u1, x1, u2, x2, x3, gamma):
+
+    u3 = (u2 - u1) * (x3 - x2)/(x2 - x1) + u2
+
+    return u3
 
 def pressure_load_interpolation(w1, x1, w2, x2, x3, gamma):
     u1 = conser_to_pri(w1, gamma)

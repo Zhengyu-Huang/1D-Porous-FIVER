@@ -52,11 +52,11 @@ class Fluid:
 
                 self.W[i,:] = w
 
-            self.W_oo = w
+            self.Wl_oo = self.Wr_oo = w
 
 
 
-        elif(fluid_info[1] == 'shock_tube'):
+        elif(fluid_info[0] == 'shock_tube'):
 
             gamma, rho_l, v_l, p_l, rho_r, v_r, p_r = fluid_info[1:]
 
@@ -70,7 +70,9 @@ class Fluid:
 
                 self.W[i,:] = w_l if self.verts[i] <= L/2.0 else w_r #todo define the left and right
 
-        elif(fluid_info[2] == 'smooth'):
+            self.Wl_oo,self.Wr_oo = w_l,w_r
+
+        elif(fluid_info[0] == 'smooth'):
             # This is smooth initialization, as Alex Main's Thesis
             verts = self.verts
             
@@ -100,6 +102,12 @@ class Fluid:
                 w = Utility.pri_to_conser([rho, v, p], gamma)
 
                 self.W[i, :] = w
+
+
+        self.mass = np.dot(self.W[:,0], self.control_volume)
+        self.momentum = np.dot(self.W[:,1], self.control_volume)
+        self.energy = np.dot(self.W[:,2], self.control_volume)
+
 
 
 

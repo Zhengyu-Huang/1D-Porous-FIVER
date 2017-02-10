@@ -9,9 +9,7 @@ INTERPOLATION_TOL = 0.1
 
 import Utility
 
-def _flux(ww, gamma):
-    u = Utility.conser_to_pri(ww, gamma)
-    [gamma] = eos
+def _flux(u, gamma):
     [rho, v, p] = u
     return np.array([rho*v, rho*v*v +p, (rho*v*v/2 + gamma * p/(gamma - 1))*v])
 

@@ -1,22 +1,25 @@
 import numpy as np
 
 class Structure:
-    def __init__(self,ms, ks, alpha, L, mode):
+    def __init__(self,ms, ks,  L, mode, material):
         '''
         :param ms: structure mass
         :param ks: structure stiffness, if the structure is modeled as piston-spring system  $$ms \dot\dot{xs} + ks(xs - xs_0) = f(t) = p_B$$
-        :param alpha: poros ratio, 0 means nonpenetrable, 1 means fully-penetrable
+        :param mode: structure motion type.  0: piston-spring system ;
+                                      1: forced motion, advancing type 1
+                                      2: forced motion, advancing type 2
+                                      3: forced motion, harmonic motion
+                                      4: fixed at L/2
         :param L: tube length, the fluid domain is [0,L]
+        :param material: ['porous', porous_ratio] or ['propeller', dp], it can be porous material, or propeller
 
         Attributes
         qq_h: structure current position and velocity at time n-0.5
         qq_n: predicted structure position and velocity at time n
         qq_old_n: predicted structure position and velocity at time n-1(the predicted values from last step)
         t: current time
-        mode: structure motion type.  0: piston-spring system ;
-                                      1: forced motion, advancing type 1
-                                      2: forced motion, advancing type 2
-                                      3: forced motion, harmonic motion
+
+
         '''
         self.ms = ms
         self.ks = ks
@@ -24,14 +27,8 @@ class Structure:
         self.qq_old_n = np.array([L/2.0, 0.0])
         self.qq_h = np.array([L/2.0, 0.0])
         self.L = L
-
-
-
-
-
+        self.material = material
         self.t = 0
-        self.porous_ratio = alpha
-
         self.mode = mode
 
     def _forced_motion(self, t,mode):
@@ -61,6 +58,12 @@ class Structure:
 
 
     def _move(self, f, dt):
+        '''
+        :param f: pressure force at t + dt/2
+        :param dt: time step
+        :return:
+        update the structure position to t+dt by midpoint rule, from qq_h
+        '''
 
         mode = self.mode
 
@@ -80,7 +83,7 @@ class Structure:
             self.qq_h = np.array([xs, vs])
 
             self.qq_n = np.array([xs + 0.5 * dt * vs + 0.125 * dt * (vs - vs_old_n), 1.5 * vs - 0.5 * vs_old_n])
-            # Because we do not use acceleration, set it as default value 0
+
 
 
         # for forced motion, we do not need qq_h
@@ -92,6 +95,11 @@ class Structure:
         self.t = self.t + dt
 
     def _predict_half_step(self, f, dt):
+        '''
+        :param f: pressure force at t
+        :param dt: time step
+        :return: predict structure postion in qq_n at time t+dt
+        '''
 
         mode = self.mode
 

@@ -12,6 +12,14 @@ class Limiter:
                 slope[i] =  (a[i]*(b[i]**2 + eps) + b[i]*(a[i]**2 + eps))/(a[i]**2 + b[i]**2 + 2*eps)
 
         return slope
+    def _VA_Albada_ave(self,a,b,eps=1.0e-15):
+
+        if(a*b <= 0):
+            slope = 0.0
+        else:
+            slope =  (a*(b**2 + eps) + b*(a**2 + eps))/(a**2 + b**2 + 2*eps)
+
+        return slope
     #  vn *------* vm
     #  v_n v_m two primitive state variables
     #  dv_n  = \nabla v_n *(xm - xn)
