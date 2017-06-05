@@ -25,6 +25,8 @@ class Intersector_Base:
 
         self.intersect_or_not = np.empty(self.nedges, dtype=bool)
 
+        self.status[:] = True
+
         self._update(structure.qq_n)
 
     def _update(self, qq_n):
@@ -45,9 +47,6 @@ class Intersector_Base:
 
         self.intersect_or_not[self.intersect_id] = True
 
-        self.status[:] = False
-
-        self.status[0:self.intersect_id+1] = True
 
 
 

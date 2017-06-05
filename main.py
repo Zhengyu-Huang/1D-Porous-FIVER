@@ -27,13 +27,14 @@ def main():
     bc: boundary condtion, there are two types of boundary condition, wall or far_field
     '''
     gamma = 1.4
-    rho = 1.4
-    Mach = 0.98
-    p = 1.0
-    v = Mach*np.sqrt(gamma*p/rho)
+    rho = 1.225
+    Mach = 0.5
+    p = 100000.0
+    c = np.sqrt(gamma*p/rho)
+    v = Mach*c
     fluid_info = ['constant', gamma, rho, v, p]
     #fluid_info = ['shock_tube', gamma, 5.99924, 19.5975, 460.894, 5.99242, -6.19633, 46.0950]
-    N = 10
+    N = 100
     L = 4.0
     bc = ['far_field', 'far_field']
     fluid= Fluid(L,N,fluid_info,bc)
@@ -54,7 +55,7 @@ def main():
     ks = 1.0
     mode = 4
     #material = ['porous', 0.1] #0 means cannot go through
-    material = ['propeller_Riemann', 0.2]
+    material = ['propeller_Riemann', 400000]
     #material = ['propeller', 0.2]
     structure = Structure(ms, ks, L, mode, material)
 
@@ -66,9 +67,9 @@ def main():
                      Dante:  Dante's new version of FIVER
     '''
 
-    t_end = 0.5
+    t_end = 0.0005
     CFL = 0.2
-    dt = CFL*float(L)/float(N-1)
+    dt = CFL*float(L)/float(N-1)/(v + c)
     time_info = [t_end, dt]
     #solver_type = 'Dante'
     solver_type = 'base'

@@ -350,6 +350,7 @@ class Embedded_Explicit_Solver_Base:
 
                 else:
                     print('unrecognized material', self.material[0])
+        print('R', R)
 
 
 

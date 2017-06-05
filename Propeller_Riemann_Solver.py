@@ -1,7 +1,7 @@
 __author__ = 'zhengyuh'
 import numpy as np
 
-def _check_solution(diskCase, rho_l, v_l, p_l,rho_r,  v_r,  p_r, v_m,   p_m, dp_l, dp_r, gamma, DEBUG = True):
+def _check_solution(diskCase, rho_l, v_l, p_l,rho_r,  v_r,  p_r, v_m,   p_m, dp_l, dp_r, gamma, DEBUG = False):
     #rho_mr, double &rho_ml,bool DEBUG)
     '''
     diskCase 0,1,2,3, i means disk is between i wave and i+1 wave;
