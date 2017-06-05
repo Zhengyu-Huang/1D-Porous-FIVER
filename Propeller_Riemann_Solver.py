@@ -11,7 +11,7 @@ def _check_solution(diskCase, rho_l, v_l, p_l,rho_r,  v_r,  p_r, v_m,   p_m, dp_
     velocity and pressure before the 3- wave are v_m, p_m + dp_r
     density before and after contact discontinuity are rho_ml, rho_mr
     '''
-    if(p_r <= 0.0 or p_l <= 0.0 or rho_l <= 0.0 or rho_r <= 0.0 or p_r + dp_r <= 0.0 or p_l+dp_l <= 0.0):
+    if(p_r <= 0.0 or p_l <= 0.0 or rho_l <= 0.0 or rho_r <= 0.0 or p_m + dp_r <= 0.0 or p_m+dp_l <= 0.0):
         return 0., 0., False;
 
     result = True;
@@ -25,7 +25,7 @@ def _check_solution(diskCase, rho_l, v_l, p_l,rho_r,  v_r,  p_r, v_m,   p_m, dp_
         s_ml = v_m - a_ml;
         rho_ml = rho_l * (p_ml/ p_l)**(1 / gamma);
         if(DEBUG): 
-            print("DEBUG: case %d, left rarefaction, velocity s_l s_ml are %f and %f\n"%diskCase, s_l, s_ml)
+            print("DEBUG: case %d, left rarefaction, velocity s_l s_ml are %f and %f\n" %(diskCase, s_l, s_ml))
         if((diskCase == 0 and s_l < 0.0 and s_ml < 0.0)or(diskCase == 1 and s_l > 0.0 and s_ml > 0.0)
            or(diskCase == 2 and s_l > 0.0 and s_ml > 0.0) or(diskCase == 3 and s_l > 0.0 and s_ml > 0.0)):
             result = False;
@@ -35,13 +35,13 @@ def _check_solution(diskCase, rho_l, v_l, p_l,rho_r,  v_r,  p_r, v_m,   p_m, dp_
         s_shock = v_l - a_l * np.sqrt((gamma + 1) *p_ml / (2 * gamma * p_l) + (gamma - 1) / (2 * gamma));
         rho_ml = rho_l * (p_ml/ p_l + (gamma - 1) / (gamma + 1)) / ((gamma - 1) * p_ml/ ((gamma + 1) * p_l) + 1);
         if(DEBUG):
-            print("DEBUG: case %d, left shock, velocity s_shock_l is %f\n" %diskCase, s_shock)
+            print("DEBUG: case %d, left shock, velocity s_shock_l is %f\n" %(diskCase, s_shock))
         if((diskCase == 0 and s_shock < 0.0 )or(diskCase == 1 and s_shock > 0.0 )or(diskCase == 2 and s_shock > 0.0)
            or (diskCase == 3 and s_shock > 0.0)):
             result = False;
 
     if(DEBUG):
-        print("DEBUG: case %d, contact discontinuity velocity is %f\n"% diskCase, v_m)
+        print("DEBUG: case %d, contact discontinuity velocity is %f\n"% (diskCase, v_m))
     if((diskCase == 0 and v_m < 0.0 )or(diskCase == 1 and v_m < 0.0 )or (diskCase == 2 and v_m > 0.0)
        or(diskCase == 3 and v_m > 0.0)):
         result = False;
@@ -55,17 +55,17 @@ def _check_solution(diskCase, rho_l, v_l, p_l,rho_r,  v_r,  p_r, v_m,   p_m, dp_
         s_mr = v_m + a_mr;
         rho_mr = rho_r * (p_mr / p_r)**(1 / gamma);
         if(DEBUG):
-            print("DEBUG: case %d,  right rarefaction, velocity s_mr s_r are %f and %f\n",diskCase, s_mr, s_r);
+            print("DEBUG: case %d,  right rarefaction, velocity s_mr s_r are %f and %f\n"%(diskCase, s_mr, s_r))
         if((diskCase == 0 and s_r < 0.0 and s_mr < 0.0)or(diskCase == 1 and s_r < 0.0 and s_mr < 0.0)
-           or (diskCase == 2 and s_r < 0.0 and s_mr < 0.0) or(diskCase == 3 and s_r > 0.0 and s_mr > 0.0))
-          result = False;
+           or (diskCase == 2 and s_r < 0.0 and s_mr < 0.0) or(diskCase == 3 and s_r > 0.0 and s_mr > 0.0)):
+            result = False;
 
 
     else:   #right shock wave
         s_shock = v_r + a_r * np.sqrt((gamma + 1) * p_mr / (2 * gamma * p_r) + (gamma - 1) / (2 * gamma));
         rho_mr = rho_r * (p_mr / p_r + (gamma - 1) / (gamma + 1)) / ((gamma - 1) * p_mr / ((gamma + 1) * p_r) + 1);
         if(DEBUG):
-            print("DEBUG: case %d, right shock, velocity s_shock_r is %f\n" %diskCase, s_shock);
+            print("DEBUG: case %d, right shock, velocity s_shock_r is %f\n" %(diskCase, s_shock))
         if((diskCase == 0 and s_shock < 0.0 )or(diskCase == 1 and s_shock < 0.0 )
            or (diskCase == 2 and s_shock < 0.0)or (diskCase == 3 and s_shock > 0.0)):
             result = False;
@@ -102,7 +102,7 @@ def _solve_contact_discontinuity(rho_l, v_l, p_l, rho_r, v_r, p_r, dp_l, dp_r, g
     '''
 
     MAX_ITE = 100;
-    TOLERANCE = 1.0e-12
+    TOLERANCE = 1.0e-8
     found = False
 
 
@@ -112,7 +112,7 @@ def _solve_contact_discontinuity(rho_l, v_l, p_l, rho_r, v_r, p_r, dp_l, dp_r, g
     A_l,A_r = 2 / ((gamma + 1) * rho_l),  2 / ((gamma + 1) * rho_r)
     B_l,B_r = (gamma - 1) / (gamma + 1) * p_l, (gamma - 1) / (gamma + 1) * p_r
 
-    p_old = (p_l + p_r)/2.0 + max(0, -dp_l, -dp_r);
+    p_old = (p_l + p_r)/2.0  + max(0, -dp_l, -dp_r);
 
     for i in range(MAX_ITE):
 
@@ -128,7 +128,7 @@ def _solve_contact_discontinuity(rho_l, v_l, p_l, rho_r, v_r, p_r, dp_l, dp_r, g
                 p_m = p_m_cand
                 break
 
-        if (2 * np.fabs(p_m - p_old) / (p_m + p_old) < TOLERANCE):
+        if (np.fabs(f_l + f_r + d_v) < TOLERANCE):
             found = True;
             break;
 
@@ -139,7 +139,7 @@ def _solve_contact_discontinuity(rho_l, v_l, p_l, rho_r, v_r, p_r, dp_l, dp_r, g
 
 
     v_m = 0.5 * (v_l + v_r + f_r - f_l);
-    return p_m, v_m, found;
+    return v_m, p_m,  found;
 
 
 
@@ -156,7 +156,7 @@ def solve_actuator_disk(u_ll, u_rr, dp, gamma):
     #rho_l ,      rho_a,          rho_a=rho_ml   rho_mr         rho_r
     #v_l,         v_a             v_a  =v_ml     v_mr           v_r
     #p_l          p_a             p_a+dp =p_ml   p_mr           p_r
-    v_m,p_m, err1 = _solve_contact_discontinuity(rho_l, v_l, p_l, rho_r, v_r, p_r, -dp, 0, gamma,v_m,p_m)
+    v_m,p_m, err1 = _solve_contact_discontinuity(rho_l, v_l, p_l, rho_r, v_r, p_r, -dp, 0, gamma)
     rho_ml, rho_mr, is_solution = _check_solution(CENTER_LEFT, rho_l, v_l, p_l, rho_r, v_r, p_r, v_m, p_m,-dp,0,gamma)
     if(is_solution):
         rho_a = rho_ml;
@@ -196,13 +196,14 @@ def solve_actuator_disk(u_ll, u_rr, dp, gamma):
     #rho_l ,      rho_ml      rho_mr         rho_a=rho_r   rho_r
     #v_l,         v_ml        v_mr           v_a=v_r        v_r
     #p_l          p_ml        p_mr           p_a=p_r-dp     p_r
-    v_m,p_m, err1 = _solve_contact_discontinuity(rho_l, v_l, p_l, rho_r, v_r, p_r - dp, 0, 0, gamma)
-    rho_ml, rho_mr, is_solution = _check_solution(RIGHT, rho_l, v_l, p_l, rho_r, v_r, p_r-dp, v_m, p_m,0 ,dp,gamma)
-    if(is_solution):
-        rho_a = rho_r;
-        v_a = v_r;
-        p_a = p_r - dp;
-        return rho_a,v_a,p_a,is_solution
+    if(p_r > dp):
+        v_m,p_m, err1 = _solve_contact_discontinuity(rho_l, v_l, p_l, rho_r, v_r, p_r - dp, 0, 0, gamma)
+        rho_ml, rho_mr, is_solution = _check_solution(RIGHT, rho_l, v_l, p_l, rho_r, v_r, p_r-dp, v_m, p_m,0 ,dp,gamma)
+        if(is_solution):
+            rho_a = rho_r;
+            v_a = v_r;
+            p_a = p_r - dp;
+            return rho_a,v_a,p_a,is_solution
 
 
     print('***ERROR: Actuator disk Riemann solver has no solution, use approximate solution');
@@ -219,3 +220,37 @@ def solve_actuator_disk(u_ll, u_rr, dp, gamma):
     return rho_a,v_a,p_a,is_solution
 
 
+if __name__ == "__main__":
+
+    gamma = 1.4;
+    dp = 0.2
+    #rho_l,  v_l , p_l =1.0, 0.0, 1.;
+    #rho_r,  v_r, p_r = 0.125, 0.0 , 0.1;
+
+
+    #rho_l,  v_l , p_l = 1.0 , -2.0, 0.4;
+    #rho_r,  v_r, p_r = 1.0, 2.0 , 0.4;
+
+
+    #rho_l,  v_l , p_l = 1.0 , 0.0, 1000.0;
+    #rho_r,  v_r, p_r = 1.0, 0.0 , 0.01;
+
+    #rho_l,  v_l , p_l = 1.0 , 0.0, 0.01;
+    #rho_r,  v_r, p_r = 1.0, 0.0 , 100;
+
+    #rho_l,  v_l , p_l = 1.0,  -0.3,  2.;
+    #rho_r,  v_r, p_r  = 1.0,  -0.3, 3.;
+
+
+    M = 0.8;
+    rho_l,  v_l,  p_l =  0.537721, 1.16313, 0.519356
+    rho_r,  v_r,  p_r =  0.682061, 2.13164, 4.37383
+    dp = 4.46429 ;
+
+
+    u_ll, u_rr = [rho_l, v_l, p_l],[rho_r, v_r, p_r]
+
+    rho_a,v_a,p_a,is_solution = solve_actuator_disk(u_ll, u_rr, dp, gamma)
+
+
+    print(rho_a, ' ', v_a, ' ', p_a)

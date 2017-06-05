@@ -33,7 +33,7 @@ def main():
     v = Mach*np.sqrt(gamma*p/rho)
     fluid_info = ['constant', gamma, rho, v, p]
     #fluid_info = ['shock_tube', gamma, 5.99924, 19.5975, 460.894, 5.99242, -6.19633, 46.0950]
-    N = 500
+    N = 10
     L = 4.0
     bc = ['far_field', 'far_field']
     fluid= Fluid(L,N,fluid_info,bc)
@@ -76,10 +76,6 @@ def main():
         from Embedded_Explicit_Solver_Base import Embedded_Explicit_Solver_Base
 
         solver = Embedded_Explicit_Solver_Base(fluid, structure, time_info)
-    elif solver_type == 'Dante':
-        from Embedded_Explicit_Solver_Dante import Embedded_Explicit_Solver_Dante
-
-        solver = Embedded_Explicit_Solver_Dante(fluid, structure, time_info)
 
 
     solver._solve()

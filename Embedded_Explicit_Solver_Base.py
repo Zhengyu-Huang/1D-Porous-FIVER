@@ -330,7 +330,7 @@ class Embedded_Explicit_Solver_Base:
                     dp = self.material[1]
 
                     #reture the density velocity and pressure upwing of the actuator disk
-                    rho_a, v_a, p_a = Propeller_Riemann_Solver._solve_actuator_disk(u_ll, u_rr, dp, gamma)
+                    rho_a, v_a, p_a,_ = Propeller_Riemann_Solver.solve_actuator_disk(u_ll, u_rr, dp, gamma)
 
                     u_Rl, u_Rr = np.array([rho_a,v_a,p_a]), np.array([rho_a,v_a,p_a + dp])
 
