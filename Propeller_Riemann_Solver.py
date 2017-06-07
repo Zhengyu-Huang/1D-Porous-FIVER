@@ -112,7 +112,7 @@ def _solve_contact_discontinuity(rho_l, v_l, p_l, rho_r, v_r, p_r, dp_l, dp_r, g
     A_l,A_r = 2 / ((gamma + 1) * rho_l),  2 / ((gamma + 1) * rho_r)
     B_l,B_r = (gamma - 1) / (gamma + 1) * p_l, (gamma - 1) / (gamma + 1) * p_r
 
-    p_old = (p_l + p_r)/2.0  + max(0, -dp_l, -dp_r);
+    p_old = (p_l + p_r)/2.0  - min(0, dp_l, dp_r);
 
     for i in range(MAX_ITE):
 
@@ -135,7 +135,8 @@ def _solve_contact_discontinuity(rho_l, v_l, p_l, rho_r, v_r, p_r, dp_l, dp_r, g
         p_old = p_m;
 
     if (not found):
-        print(" ***ERROR: Divergence in Newton-Raphason iteration in Actuator disk Riemann solver");
+        print(" ***ERROR: Divergence in Newton-Raphason iteration in Actuator disk Riemann solver",
+              rho_l, v_l, p_l, rho_r, v_r, p_r, dp_l, dp_r,);
 
 
     v_m = 0.5 * (v_l + v_r + f_r - f_l);
@@ -217,6 +218,8 @@ def solve_actuator_disk(u_ll, u_rr, dp, gamma):
         p_a = p_r - dp;
 
 
+
+
     return rho_a,v_a,p_a,is_solution
 
 
@@ -243,9 +246,9 @@ if __name__ == "__main__":
 
 
     M = 0.8;
-    rho_l,  v_l,  p_l =  0.537721, 1.16313, 0.519356
-    rho_r,  v_r,  p_r =  0.682061, 2.13164, 4.37383
-    dp = 4.46429 ;
+    rho_l,  v_l,  p_l =  0.796388, 1.203498, 0.823813
+    rho_r,  v_r,  p_r =  0.833442, 1.378080, 1.756812
+    dp = 1.116071 ;
 
 
     u_ll, u_rr = [rho_l, v_l, p_l],[rho_r, v_r, p_r]

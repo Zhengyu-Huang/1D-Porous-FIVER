@@ -332,6 +332,8 @@ class Embedded_Explicit_Solver_Base:
                     #reture the density velocity and pressure upwing of the actuator disk
                     rho_a, v_a, p_a,_ = Propeller_Riemann_Solver.solve_actuator_disk(u_ll, u_rr, dp, gamma)
 
+                    print(rho_a,v_a,p_a)
+
                     u_Rl, u_Rr = np.array([rho_a,v_a,p_a]), np.array([rho_a,v_a,p_a + dp])
 
                     flux_l = Flux._Roe_flux(u_ll, u_Rl, gamma)
@@ -350,7 +352,7 @@ class Embedded_Explicit_Solver_Base:
 
                 else:
                     print('unrecognized material', self.material[0])
-        print('R', R)
+
 
 
 
@@ -512,13 +514,14 @@ class Embedded_Explicit_Solver_Base:
         plt.title(title)
 
         M = self.fluid.nverts//2
+        print('dp is ',self.material[1])
         print('pressure difference is %.15f, mass flux is %.15f , %.15f, momentum flux is %.15f , %.15f'
               %(V[M+10,2] - V[M-10,2], V[M-10, 0]*V[M-10,1], V[M+10, 0]*V[M+10,1],W[M-10,1]*V[M-10,1] + V[M-10,2],W[M+10,1]*V[M+10,1] + V[M+10,2] ))
 
         print('pressure difference is %.15f, stagnation pressure diff is %.15f, mass flux diff is %.15f , momentum flux diff is %.15f'
               %(V[M+10,2] - V[M-10,2], V[M+10,2]  + 0.5*V[M+10,0]*V[M+10,1]**2 - V[M-10,2] - 0.5*W[M-10,0]*V[M-10,1]**2, V[M-10, 0]*V[M-10,1] - V[M+10, 0]*V[M+10,1], W[M-10,1]*V[M-10,1] + V[M-10,2] - W[M+10,1]*V[M+10,1] - V[M+10,2] ))
-        print('left rho,u,p,E  is %.15f, %.15f,  %.15f , %.15f' %(V[M-10,0] , V[M-10, 1], V[M-10,2] , W[M-10,2]))
-        print('right rho,u,p,E  is %.15f, %.15f,  %.15f, %.15f' %(V[M+10,0] , V[M+10, 1], V[M+10,2] , W[M-10,2]))
+        print('left rho,u,p,E  is %.15f, %.15f,  %.15f , %.15f' %(V[M-2,0] , V[M-2, 1], V[M-2,2] , W[M-2,2]))
+        print('right rho,u,p,E  is %.15f, %.15f,  %.15f, %.15f' %(V[M+2,0] , V[M+2, 1], V[M+2,2] , W[M-2,2]))
         plt.show()
 
 
