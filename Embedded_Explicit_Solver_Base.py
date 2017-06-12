@@ -302,7 +302,7 @@ class Embedded_Explicit_Solver_Base:
                         R[i+1, :] += porous*flux + (1-porous)*flux_FS
                         print('r ', u_Rl, u_rr, flux, flux_FS,porous*flux + (1-porous)*flux_FS)
 
-                elif(self.material[0] == 'propeller'):
+                elif(self.material[0] == 'propeller_new_source'):
 
                     dp = self.material[1]
 
@@ -316,6 +316,25 @@ class Embedded_Explicit_Solver_Base:
                     vs = self.intersector._velocity()
 
                     source = np.array([0, dp, gamma/(gamma-1)*dp*v_m])#+ dp*(v_m - vs)/(gamma-1)])
+                    #source = np.array([0, dp, dp * v_m])
+                    R[i,:] -= flux
+
+                    R[i+1] += flux + source
+
+                elif(self.material[0] == 'propeller_old_source'):
+
+                    dp = self.material[1]
+
+                    u_ll, u_rr = u_l, u_r
+
+                    flux = Flux._Roe_flux(u_ll, u_rr, gamma)
+
+                    v_m = (u_l[1] + u_r[1])/2.0
+
+
+                    vs = self.intersector._velocity()
+
+                    source = np.array([0, dp, dp*v_m])#+ dp*(v_m - vs)/(gamma-1)])
                     #source = np.array([0, dp, dp * v_m])
                     R[i,:] -= flux
 
@@ -524,6 +543,28 @@ class Embedded_Explicit_Solver_Base:
         print('right rho,u,p,E  is %.15f, %.15f,  %.15f, %.15f' %(V[M+2,0] , V[M+2, 1], V[M+2,2] , W[M-2,2]))
         plt.show()
 
+
+    def _save(self):
+
+        fluid = self.fluid
+
+        V = np.empty(shape=[fluid.nverts, 3], dtype=float)
+
+        W = self.W
+
+        self._extrapolate_inactive_node(W)
+
+        L = fluid.L
+
+        gamma = fluid.gamma
+
+        verts = fluid.verts
+
+        Utility.conser_to_pri_all(W, V, gamma)
+
+
+
+        np.save(self.material[0],V)
 
 
 

@@ -100,8 +100,10 @@ def _solve_contact_discontinuity(rho_l, v_l, p_l, rho_r, v_r, p_r, dp_l, dp_r, g
     The pressure before the third wave is p_m + dp_r
     p is the pressure at contact discontinuity
     '''
+    if(p_l < 0.0 or rho_l <0.0 or p_r <0.0 or rho_r < 0.0):
+        print('ERROR negative pressure density different',p_l,rho_l,p_r,rho_r)
 
-    MAX_ITE = 100;
+    MAX_ITE = 10000;
     TOLERANCE = 1.0e-8
     found = False
 
@@ -135,6 +137,7 @@ def _solve_contact_discontinuity(rho_l, v_l, p_l, rho_r, v_r, p_r, dp_l, dp_r, g
         p_old = p_m;
 
     if (not found):
+        print('np.fabs(f_l + f_r + d_v) is ', np.fabs(f_l + f_r + d_v))
         print(" ***ERROR: Divergence in Newton-Raphason iteration in Actuator disk Riemann solver",
               rho_l, v_l, p_l, rho_r, v_r, p_r, dp_l, dp_r,);
 
@@ -162,6 +165,7 @@ def solve_actuator_disk(u_ll, u_rr, dp, gamma):
     if(is_solution):
         rho_a = rho_ml;
         v_a = v_m;
+
         p_a = p_m - dp;
         return rho_a,v_a,p_a,is_solution
 
@@ -246,9 +250,12 @@ if __name__ == "__main__":
 
 
     M = 0.8;
-    rho_l,  v_l,  p_l =  0.796388, 1.203498, 0.823813
-    rho_r,  v_r,  p_r =  0.833442, 1.378080, 1.756812
-    dp = 1.116071 ;
+    #rho_l,  v_l,  p_l =  0.811557, 1.16463, 0.0136609
+    #rho_r,  v_r,  p_r =  4.9831, 4.9831, 4.28905
+    dp = 4.46429 ;
+    rho_l,  v_l,  p_l =  1,1, 0.0136609
+    rho_r,  v_r,  p_r =  1,1, 0.0136609 + dp
+
 
 
     u_ll, u_rr = [rho_l, v_l, p_l],[rho_r, v_r, p_r]

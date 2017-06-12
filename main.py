@@ -28,12 +28,12 @@ def main():
     '''
     gamma = 1.4
     rho = 1.225
-    Mach = 0.8
+    Mach = 0.0
     p = 100000.0
     c = np.sqrt(gamma*p/rho)
     v = Mach*c
-    dp = 100000.0
-
+    dp = 10000.0
+    '''
     v_ref = v
     p_ref = rho*v*v
 
@@ -42,10 +42,10 @@ def main():
     rho = 1
     v /= v_ref
     c /= v_ref
-
+    '''
     fluid_info = ['constant', gamma, rho, v, p]
     #fluid_info = ['shock_tube', gamma, 5.99924, 19.5975, 460.894, 5.99242, -6.19633, 46.0950]
-    N = 200
+    N = 500
     L = 4.0
     bc = ['far_field', 'far_field']
     fluid= Fluid(L,N,fluid_info,bc)
@@ -66,8 +66,8 @@ def main():
     ks = 1.0
     mode = 4
     #material = ['porous', 0.1] #0 means cannot go through
-    material = ['propeller_Riemann', dp]
-    #material = ['propeller', 0.2]
+    #material = ['propeller_Riemann', dp]
+    material = ['propeller_new_source', dp]
     structure = Structure(ms, ks, L, mode, material)
 
     '''
@@ -78,7 +78,7 @@ def main():
                      Dante:  Dante's new version of FIVER
     '''
 
-    t_end = 0.4
+    t_end = 0.002
     CFL = 0.2
     dt = CFL*float(L)/float(N-1)/(v + c)
     time_info = [t_end, dt]
@@ -91,7 +91,8 @@ def main():
 
 
     solver._solve()
-    solver._draw()
+    #solver._draw()
+    solver._save()
     #Exact_solution.Receding_Result(t_end,fluid.verts,fluid_info[1:])
 
 
